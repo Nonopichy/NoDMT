@@ -1,29 +1,32 @@
 # dev: NonopichyBR || Nono#2009
-# Use paper spigot > 1.8.8 | original version 1.12.2
-# dep: biosphere2-1.0.2
 options:
-	v_n: NoDMT
-	Distance: 70
+	distancia.maxima: 100
+	gas.log: 10
+	gas.coal: 20
+	gas.nofall: 2
+	gas.max: 2000
+	gas.speed: 1000
+	gas.hunter: 1000
 function dmt_gancho_colocar(user: player, direction: text):
-	if {{@v_n}::%{_user}%::Gas} > 0:
-		if distance between {_user} and location of target block of {_user} < ("{@Distance}" parsed as number): 
+	if {EQUIP.3D.GAS::%{_user}%} > 0:
+		if distance between {_user} and location of target block of {_user} < ("{@distancia.maxima}" parsed as number): 
 			if "%block at location of target block of {_user}%" is not "air" or "<none>" or "water" or "lava" or "long grass" or "double-long grass" or "dead_shrub" or "sugar_cane_block" or "175" or "iron_bars_block" or "daisy" or "red tulip" or "white tulip" or "orange tulip" or "dandelion" or "sunflower" or "fern" or "azure bluet" or "red poppy" or "pink tulip" or "orchid" or "allium" or "floor torch" or "torch":
-				set {{@v_n}::%{_user}%::Target::%{_direction}%} to block at location of target block of {_user}
-				remove 1 from {{@v_n}::%{_user}%::Gas}
-				loop players in radius ("{@Distance}" parsed as number) around {_user}:
-					play "BLOCK_TRIPWIRE_CLICK_ON" to loop-player at volume 1
-					play "BLOCK_WOOD_FALL" to loop-player at volume 1
+				set {DM.%{_direction}%.%{_user}%} to block at location of target block of {_user}
+				remove 1 from {EQUIP.3D.GAS::%{_user}%}
+				loop players in radius ("{@distancia.maxima}" parsed as number) around {_user}:
+					play "BLOCK_TRIPWIRE_CLICK_ON" to loop-player at volume 5
+					play "BLOCK_WOOD_FALL" to loop-player at volume 5
 function dmt_gancho_tirar(user: player, direction: text):
-	if {{@v_n}::%{_user}%::Target::%{_direction}%} is set:
-		delete {{@v_n}::%{_user}%::Target::%{_direction}%}
+	if {DM.%{_direction}%.%{_user}%} is set:
+		delete {DM.%{_direction}%.%{_user}%}
 function dmt_ir(user: player, direction: text):
-	if {{@v_n}::%{_user}%::Gas} > 0:
-		if {{@v_n}::%{_user}%::Target::%{_direction}%} is set:
-			push {_user} (direction from {_user} to {{@v_n}::%{_user}%::Target::%{_direction}%}) at speed 0.7
-			remove 2.5 from {{@v_n}::%{_user}%::Gas}
-			loop players in radius ("{@Distance}" parsed as number)/1.5 around {_user}:
-				play "BLOCK_LAVA_EXTINGUISH" to loop-player at volume 1
-			if distance between {_user} and {{@v_n}::%{_user}%::Target::%{_direction}%} > 7:
+	if {EQUIP.3D.GAS::%{_user}%} > 0:
+		if {DM.%{_direction}%.%{_user}%} is set:
+			push {_user} (direction from {_user} to {DM.%{_direction}%.%{_user}%}) at speed 0.6
+			remove 2.5 from {EQUIP.3D.GAS::%{_user}%}
+			loop players in radius ("{@distancia.maxima}" parsed as number) around {_user}:
+				play "BLOCK_LAVA_EXTINGUISH" to loop-player at volume 5
+			if distance between {_user} and {DM.%{_direction}%.%{_user}%} > 7:
 				apply potion of levitation of tier 1 to {_user} for 2 second
 				wait 35 ticks
 				remove levitation from {_user}
@@ -42,39 +45,81 @@ on left click with a iron sword:
 		else:
 			dmt_gancho_colocar(player, "LEFT")
 function view_camera(p: player, direction: text, simbolo: text) :: text:
-	if {{@v_n}::%{_p}%::Target::%{_direction}%} is set:
+	if {DM.%{_direction}%.%{_p}%} is set:
 		set {_%{_direction}%} to "&a%{_simbolo}%"
-		if distance between {_p} and {{@v_n}::%{_p}%::Target::%{_direction}%} > ("{@Distance}" parsed as number):
+		if distance between {_p} and {DM.%{_direction}%.%{_p}%} > ("{@distancia.maxima}" parsed as number):
 			dmt_gancho_tirar({_p}, {_direction})
 		else:
-			set {_y::*} to line between location of {_p} and {{@v_n}::%{_p}%::Target::%{_direction}%} with density 0.5
+			set {_y::*} to line between location of {_p} and {DM.%{_direction}%.%{_p}%} with density 1
 			show note at {_y::*}
 	else:
 		set {_%{_direction}%} to "&c%{_simbolo}%"
-	return {_%{_direction}%}	
+	return {_%{_direction}%}
+			
 on join:
 	while player is online:
 		set {_right} to view_camera(player, "RIGHT", "◗")
 		set {_left} to view_camera(player, "LEFT", "◖")
 		set {_center} to "&c☉"
-		if distance between player and location of target block of {_p} < ("{@Distance}" parsed as number): 
+		if distance between player and location of target block of {_p} < ("{@distancia.maxima}" parsed as number): 
 			if "%block at location of target block of player%" is not "air" or "<none>" or "water" or "lava" or "long grass" or "double-long grass" or "dead_shrub" or "sugar_cane_block" or "175" or "iron_bars_block" or "daisy" or "red tulip" or "white tulip" or "orange tulip" or "dandelion" or "sunflower" or "fern" or "azure bluet" or "red poppy" or "pink tulip" or "orchid" or "allium" or "floor torch" or "torch":
 				set {_center} to "&a☉"
-		if player's tool is iron sword named "&7DMT":
-			send player title "" with subtitle "  &l%{_left}% &l%{_center}% &l%{_right}%" for 20 ticks
-			set action bar of player to "&f&n%{{@v_n}::%player%::Gas}% &f&n㎜³"
-			if {{@v_n}::%{_user}%::Gas} < 0:
-				set {{@v_n}::%{_user}%::Gas} to 0
-			if "%{{@v_n}::%player%::Gas}%" = "<none>":
-				set {{@v_n}::%{_user}%::Gas} to 0
-		wait 8 ticks
+				if player has levitation:
+					make player see block at location of target block of player as iron_bars_block
+					wait 20 ticks
+					make player see block at location of target block of player as type of block at location of target block of player
+		send player title "" with subtitle "  &l%{_left}% &l%{_center}% &l%{_right}%" for 40 ticks
+		set action bar of player to "&f&n%{EQUIP.3D.GAS::%player%}% &f&n㎜³"
+		if {EQUIP.3D.GAS::%player%} < 0:
+			set {EQUIP.3D.GAS::%player%} to 0
+		set player's compass target to location of {SPEED-RUNNER}
+		wait 2 ticks
+
+on right click with a log:
+	if player is sneaking:
+		if {EQUIP.3D.GAS::%player%} < ("{@gas.max}" parsed as number):
+			cancel event
+			remove 1 log from player
+			add ("{@gas.log}" parsed as number) to {EQUIP.3D.GAS::%player%}	
+on right click with a coal:
+	if player is sneaking:
+		if {EQUIP.3D.GAS::%player%} < ("{@gas.max}" parsed as number):
+			cancel event
+			remove 1 coal from player
+			add ("{@gas.coal}" parsed as number) to {EQUIP.3D.GAS::%player%}
 on damage of player:
 	if damage cause is fall:
 		if victim has levitation:
 			cancel event
-		else if {{@v_n}::%victim%::Gas} > 0:
-			send "&7## -1.5 De Gás Compremido! (Dano De Queda)" to victim
-			remove 1.5 from {{@v_n}::%victim%::Gas}
+			stop
+		if {EQUIP.3D.GAS::%victim%} > 0:
+			send "&7DMT ➳ NoFall -2 gas" to victim
+			remove ("{@gas.nofall}" parsed as number) from {EQUIP.3D.GAS::%victim%}
 			cancel event
-on quit:
-	delete {{@v_n}::%player%::*}
+			
+on respawn:
+	set gamemode of player to Survival
+	set chestplate of player to leather chestplate
+	set leggings of player to leather leggings
+	give a iron sword named "&7DMT" to player
+	give a compass to player
+	
+command /speed-runner <player>:
+	usage: /speed-runner <SPEED>[Gerek_137]
+	trigger:
+		set {SPEED-RUNNER} to arg 1
+		broadcast "%{SPEED-RUNNER}%"
+		make player execute command "setworldspawn"
+		loop all players:
+			clear loop-player's inventory
+			heal loop-player
+			teleport loop-player to player
+			set loop-player's food to 20
+			set gamemode of loop-player to Survival
+			set chestplate of loop-player to leather chestplate
+			set leggings of loop-player to iron leggings
+			give a iron sword named "&7DMT" to loop-player
+			give a compass to loop-player
+			set {EQUIP.3D.GAS::%loop-player%} to ("{@gas.hunter}" parsed as number)
+		set {EQUIP.3D.GAS::%{SPEED-RUNNER}%} to ("{@gas.speed}" parsed as number)
+		give 2 bread to {SPEED-RUNNER}
